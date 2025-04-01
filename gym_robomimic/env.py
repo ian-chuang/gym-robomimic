@@ -13,17 +13,20 @@ class RoboMimicEnv(gym.Env):
     def __init__(
         self, 
         env_meta,
+        lite_physics=False,
+        input_type: str="delta",
         shift_wrist_camera: bool=True,
     ):
         super().__init__()
         self.shift_wrist_camera = shift_wrist_camera
+        self.n_robots = len(env_meta["env_kwargs"]["robots"])
+        env_meta["env_kwargs"]["lite_physics"] = lite_physics
         self.env = robosuite.make(env_meta["env_name"], **env_meta["env_kwargs"])
 
         # action space
-        low, high = self.env.action_spec
-        self.action_dim = len(low)
+        self.action_dim = self.env.action_spec[0].shape[0]
         self.action_space = spaces.Box(
-            low=low, high=high, shape=(self.action_dim,), dtype=np.float64
+            low=-np.inf, high=np.inf, shape=(self.action_dim,), dtype=np.float64
         )
 
         # observation space
@@ -63,6 +66,7 @@ class RoboMimicEnv(gym.Env):
         self.observation_space = spaces.Dict(self.observation_space_dict)
 
         self._fill_in_osc_controllers()
+        self.set_input_type(input_type)
         if self.shift_wrist_camera:
             self.move_wrist_cameras()
 
@@ -86,13 +90,18 @@ class RoboMimicEnv(gym.Env):
         }
         return filtered_obs
     
-    def process_action(self, action):
-        for i in range(self.action_dim // 8):
-            robot_action = action[i*8:(i+1)*8]
-            action_mode = robot_action[0]
-            osc_action = robot_action[1:7]
-            gripper_action = robot_action[7]
-            self.osc_controllers[i].input_type = "delta" if action_mode < 0.25 else "absolute"
+    # def process_action(self, action):
+    #     new_action = []
+    #     assert action.shape[0] == 10 * self.n_robots
+    #     for i in range(self.n_robots):
+    #         robot_action = action[i*10:(i+1)*10]
+    #         new_action.extend(robot_action[:3]) # position
+    #         if self.osc_controllers[i].input_type == "delta":
+    #             new_action.extend(robot_action[3:6])
+    #         else:
+    #             new_action.extend(np_axis_angle_from_rotation_6d(robot_action[3:9]))
+    #         new_action.append(robot_action[9]) # gripper
+    #     return np.array(new_action)
     
     def set_input_type(self, input_type):
         assert input_type in ["delta", "absolute"]
@@ -205,11 +214,15 @@ class RoboMimicEnv(gym.Env):
         self.env.sim.model.cam_pos[cam_id] = pos
         self.env.sim.model.cam_quat[cam_id] = quat
 
-    def move_wrist_cameras(self):
+    def move_wrist_cameras(self, 
+        pos=[0.13, 0, 0.025], 
+        quat=[0.2126311, 0.6743797, 0.6743797, 0.2126311],
+    ):
         wrist_cameras = [x for x in self.env.sim.model.camera_names if "eye_in_hand" in x]
         for camera in wrist_cameras:
             self.set_camera_pose(
-                pos=[0.125, 0, -0.017],
-                quat=[0.18301270189221933, 0.6830127018922194, 0.6830127018922193, 0.1830127018922193],
+                pos=pos,
+                quat=quat,
                 camera_name=camera
             )
+        self.env.sim.forward()

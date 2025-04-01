@@ -6,12 +6,11 @@ def main():
     import os
     import numpy as np
 
-    env = "gym_robomimic/lift-v0"
-    hdf5_path = "datasets/lift/ph/low_dim_v15.hdf5"
-    repo_id = "iantc104/robomimic_sim_lift"
+    env = "gym_robomimic/square-v0"
+    hdf5_path = "datasets/square/ph/low_dim_v15.hdf5"
+    repo_id = "iantc104/robomimic_sim_square"
     description = "pick up the red cube"
     fps = 20
-
     
     # export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/ian/miniconda3/lib/
 
@@ -34,6 +33,8 @@ def main():
         root=f'outputs/{repo_id}',
         features = {
             "action": {"dtype": "float32", "shape": (env.unwrapped.action_dim,), 'names': None},
+            "action.delta": {"dtype": "float32", "shape": (env.unwrapped.action_dim,), 'names': None},
+            "action.absolute": {"dtype": "float32", "shape": (env.unwrapped.action_dim,), 'names': None},
             "observation.state": {"dtype": "float32", "shape": (env.unwrapped.state_dim,), 'names': None},
             "observation.environment_state": {"dtype": "float32", "shape": (env.unwrapped.environment_state_dim,), 'names': None},
             **image_features,
@@ -54,9 +55,11 @@ def main():
 
         success = False
         for action in actions:
-            obs, reward, is_success, _, _  = env.step(action)
+            obs, reward, is_success, _, info = env.step(action)
             frame = {
                 "action": action.astype(np.float32),
+                "action.absolute": info['absolute_action'].astype(np.float32),
+                "action.delta": action.astype(np.float32),
                 "observation.state": obs['agent_pos'].astype(np.float32),
                 "observation.environment_state": obs['environment_state'].astype(np.float32),
                 **{f"observation.images.{k}": v for k,v in obs['pixels'].items()},
