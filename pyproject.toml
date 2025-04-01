@@ -11,8 +11,8 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "gymnasium",
-    "git+https://github.com/ian-chuang/robomimic.git",
-    "git+https://github.com/ian-chuang/robosuite.git",
+    "robomimic@git+https://github.com/ian-chuang/robomimic.git",
+    "robosuite@git+https://github.com/ian-chuang/robosuite.git"
 ]
 
 
