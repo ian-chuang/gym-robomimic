@@ -10,7 +10,9 @@ license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    # TODO
+    "gymnasium",
+    "git+https://github.com/ian-chuang/robomimic.git",
+    "git+https://github.com/ian-chuang/robosuite.git",
 ]
 
 
