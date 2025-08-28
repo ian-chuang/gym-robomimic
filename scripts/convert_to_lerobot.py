@@ -7,7 +7,7 @@ def main():
     import numpy as np
 
     env = "gym_robomimic/square-v0"
-    hdf5_path = "datasets/square/ph/low_dim_v15.hdf5"
+    hdf5_path = "/home/ianchuang/projects/wmil/gym-robomimic/datasets/square/ph/low_dim_v15.hdf5"
     repo_id = "iantc104/robomimic_sim_square"
     description = "pick up the red cube"
     fps = 20
@@ -63,9 +63,8 @@ def main():
                 "observation.state": obs['agent_pos'].astype(np.float32),
                 "observation.environment_state": obs['environment_state'].astype(np.float32),
                 **{f"observation.images.{k}": v for k,v in obs['pixels'].items()},
-                'task': description,
             }
-            dataset.add_frame(frame)
+            dataset.add_frame(frame, task=description)
             success = success or is_success
 
         if not success:
